@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Good Ideas for Open Source Python Development</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Good Ideas for Open Source (Python) Development
+
+Patrick Young
+
+---
+
+# Disclaimer
+
+* I'm not an expert in open source Python development
+
+* These are my options alone
+
+* These are tools I've found useful; I'd really like to hear about others you like
+
+---
+
+# Why Open Source?
+
+* Gain trust/mind share - developers are:
+
+  1. **Paranoid** (they don't trust your black box)
+  2. **Cheap** (hard to convince the powers that be to open up the check book)
+  3. **Hate vendor lock-in**
+
+* Good promotion for you and DigitalGlobe
+
+  * Check out how many stars [MapBox's](https://github.com/mapbox) projects have (27 pages of repos!)
+  * Happy developers are productive developers
+
+* Encourages better code
+
+  * Less apt to be sloppy if someone else can take peak
+  * Discourages code bloat
+
+* Lots of free tooling for you if you're project is open source (more coming)
+
+---
+
+# Write Good Documentation
+
+* No one will use your package if it takes more than a second to figure out what it does
+
+* [GitHub](https://github.com/github/markup) renders MarkDown and Restructured Text (and a bunch of others) in a README.md/rst for you!  Use this feature!  
+
+  * A good place for the elevator pitch on your project, quick install instructions, etc
+
+  * I don't think its a great place for all your documentation to be hosted...
+
+---
+
+# Write Good Documentation
+
+* It is a pain to hand write your API documentation (time consuming, quickly out of date)
+
+* Instead use [Sphinx](http://sphinx-doc.org/) (python.org's documentation is generated in this way)
+
+  * I like to write my doc strings as in the [Google style guide](https://google.github.io/styleguide/pyguide.html) and Sphinx renders them nicely automatically:
+
+.center[![](images/ipython-docstring.png "IPython")]
+
+---
+
+# Write Good Documentation
+
+* It is a pain to hand write your API documentation (time consuming, quickly out of date)
+
+* Instead use [Sphinx](http://sphinx-doc.org/) (python.org's documentation is generated in this way)
+
+  * I like to write my doc strings as in the [Google style guide](https://google.github.io/styleguide/pyguide.html) and Sphinx renders them nicely automatically:
+
+.center[![](images/sphinx.png "Sphinx Rendered")]
+
+---
+
+# Host Your Documentation Online
+
+* Open source projects can use [Read the Docs](https://readthedocs.org/) for free hosting, here's an [example](http://tiletanic.readthedocs.org/en/latest/)
+
+  * Awesome Sphinx integration, builds on every commit!
+
+.center[![](images/rthed.png "Read the Docs")]
+
+* Another options is [GitHub pages](https://pages.github.com/), integrates nicely with [Jekyll](http://jekyllrb.com/)
+
+---
+
+# Make Your Package Easily Installable
+
+* No one wants to spend hours figuring out how to integrate your code into their project
+
+* [Pip](https://pip.pypa.io/en/stable/) is the tool of choice for installing Python projects (on PyPi or locally)
+  * Included in recent versions of Python
+
+* You make your package installable via a `setup.py` in your root directory
+
+* Pretty straightforward for pure Python, things are more complicated if you build c extensions, etc.
+
+* The [Python Packaging Authority](https://packaging.python.org/en/latest/) is a great resource
+
+---
+
+# Make Your Package Easily Installable
+
+A real example:
+
+```python
+import sys
+from setuptools import setup, find_packages
+
+open_kwds = {}
+if sys.version_info > (3,):
+    open_kwds['encoding'] = 'utf-8'
+
+with open('README.rst', **open_kwds) as f:
+    readme = f.read()
+
+setup(name='tiletanic',
+      version='0.0.4',
+      description='Geospatial tiling utilities',
+      long_description=readme,
+      classifiers=[],
+      keywords='',
+      author='Patrick Young',
+      author_email='patrick.young@digitalglobe.com',
+      url='https://github.com/digitalglobe/tiletanic',
+      license='MIT',
+      packages=find_packages(exclude=['tests', 'docs']),
+      include_package_data=True,
+      install_requires=['shapely>=1.5']
+      )
+
+```
+
+---
+
+# Put Your Package in PyPi
+
+* Canonical place for Python packages, lets you run 
+
+.center[`pip install your-awesome-package`]
+
+* Easy to do if you've got your `setup.py` in order ([a tutorial](https://packaging.python.org/en/latest/distributing/#uploading-your-project-to-pypi))
+
+  * There is a [test site](https://wiki.python.org/moin/TestPyPI) to practice on (you get one shot with a given version number on PyPi)
+
+---
+
+# Write Some Tests
+
+* As your package grows, you will inevitably refactor
+
+  * It's hard to know if you've broken something
+  * Quite nice to have when installing in a new environment
+  * Customers of your code will want to run them if something goes wrong
+
+
+* I like [pytest](http://pytest.org/latest/) over the built in [unittest](https://docs.python.org/2/library/unittest.html) package
+
+  * Has a great runner (will run unittest, nose, doctests in addition to pytest style)
+  * Lots of built in magic (fixtures, temporary directory and file support, etc)
+
+```python
+def test_cover_geometry_multilinestring1(tiler, mls):
+    """A MultiLineString geometry."""
+    tiles = [tile for tile in cover_geometry(tiler, mls, 8)]
+    assert len(tiles) == 4
+    assert set(tiles) == {(127, 88, 8), (127, 89, 8), (128, 88, 8), (128, 89, 8)}
+```
+
+---
+
+# Use Continuous Integration
+
+* I like [travis](https://travis-ci.org/) and its free for open source!
+
+* Just drop a `.travis.yml` file in your root directory and get an account:
+
+```yaml
+language: python
+
+python:
+  - "2.7"
+
+before_install:
+  - sudo add-apt-repository -y ppa:ubuntugis/ppa
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libgeos-dev python-numpy
+  - pip install -r requirements-dev.txt
+
+install:
+  - pip install -e .
+
+script: "py.test tests"  
+```
+
+* Supports much more than Python
+
+---
+
+# Use Continuous Integration
+
+*  Travis runs on every commit and alerts you to success/failure with nice logs
+
+.center[![](images/travis.png "travis")]
+
+---
+
+# Summary
+
+For an open source Python package to be useful, I think one ought to:
+
+1. Write good documentation (this is easy if you keep up on your doc strings)
+2. Publish your documentation (A summary in GitHub, API docs in Read The Docs)
+3. Make it easy to install your package (`setup.py` + pushing to PyPi)
+4. Write some tests (100% coverage just for the sake of it is of dubious value)
+5. Use continuous integration (lots of free options for open source)
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
+
